@@ -15,7 +15,8 @@ local Config = {
         ShowDistance = true,
         ShowHealth = true,
         BoxColor = Color3.fromRGB(255, 0, 0),
-        NameColor = Color3.fromRGB(255, 255, 255)
+        NameColor = Color3.fromRGB(255, 255, 255),
+        TeamCheck = true
     },
     Aimbot = {
         Enabled = false,
@@ -23,7 +24,8 @@ local Config = {
         ShowFOV = true,
         FOVColor = Color3.fromRGB(255, 255, 255),
         TargetPart = "Head",
-        Smoothness = IsMobile and 0.15 or 0.1
+        Smoothness = IsMobile and 0.15 or 0.1,
+        TeamCheck = true
     }
 }
 
@@ -31,6 +33,14 @@ local ESPObjects = {}
 local FOVCircle
 local MobileGUI
 local MenuOpen = true
+
+-- Função para verificar se o jogador está no mesmo time
+local function IsSameTeam(player)
+    if not LocalPlayer.Team or not player.Team then
+        return false
+    end
+    return LocalPlayer.Team == player.Team
+end
 
 local function CreateGUI()
     local ScreenGui = Instance.new("ScreenGui")
@@ -61,8 +71,8 @@ local function CreateGUI()
     -- Painel principal
     local MainFrame = Instance.new("Frame")
     MainFrame.Name = "MainFrame"
-    MainFrame.Size = UDim2.new(0, 320, 0, 450)
-    MainFrame.Position = UDim2.new(0.5, -160, 0.5, -225)
+    MainFrame.Size = UDim2.new(0, 320, 0, 520)
+    MainFrame.Position = UDim2.new(0.5, -160, 0.5, -260)
     MainFrame.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
     MainFrame.BackgroundTransparency = 0.1
     MainFrame.BorderSizePixel = 0
@@ -128,7 +138,7 @@ local function CreateGUI()
     ContentFrame.BackgroundTransparency = 1
     ContentFrame.BorderSizePixel = 0
     ContentFrame.ScrollBarThickness = 6
-    ContentFrame.CanvasSize = UDim2.new(0, 0, 0, 600)
+    ContentFrame.CanvasSize = UDim2.new(0, 0, 0, 680)
     ContentFrame.Parent = MainFrame
     
     -- Função para criar seção
@@ -308,15 +318,21 @@ local function CreateGUI()
     CreateToggle("Show Health Bar", 290, Config.ESP.ShowHealth, function(val)
         Config.ESP.ShowHealth = val
     end)
+    CreateToggle("Team Check (ESP)", 350, Config.ESP.TeamCheck, function(val)
+        Config.ESP.TeamCheck = val
+    end)
     
-    CreateSection("🎯 Aimbot Settings", 350)
-    CreateToggle("Aimbot Enabled", 400, Config.Aimbot.Enabled, function(val)
+    CreateSection("🎯 Aimbot Settings", 410)
+    CreateToggle("Aimbot Enabled", 460, Config.Aimbot.Enabled, function(val)
         Config.Aimbot.Enabled = val
     end)
-    CreateToggle("Show FOV Circle", 460, Config.Aimbot.ShowFOV, function(val)
+    CreateToggle("Show FOV Circle", 520, Config.Aimbot.ShowFOV, function(val)
         Config.Aimbot.ShowFOV = val
     end)
-    CreateSlider("FOV Size", 520, 50, 500, Config.Aimbot.FOV, function(val)
+    CreateToggle("Team Check (Aimbot)", 580, Config.Aimbot.TeamCheck, function(val)
+        Config.Aimbot.TeamCheck = val
+    end)
+    CreateSlider("FOV Size", 640, 50, 500, Config.Aimbot.FOV, function(val)
         Config.Aimbot.FOV = val
     end)
     
@@ -331,7 +347,7 @@ local function CreateGUI()
     
     OpenButton.MouseButton1Click:Connect(function()
         MainFrame.Visible = true
-        MainFrame:TweenPosition(UDim2.new(0.5, -160, 0.5, -225), Enum.EasingDirection.Out, Enum.EasingStyle.Back, 0.3, true)
+        MainFrame:TweenPosition(UDim2.new(0.5, -160, 0.5, -260), Enum.EasingDirection.Out, Enum.EasingStyle.Back, 0.3, true)
         OpenButton.Visible = false
         MenuOpen = true
     end)
@@ -369,6 +385,49 @@ local function CreateGUI()
     
     ScreenGui.Parent = game:GetService("CoreGui")
     MobileGUI = ScreenGui
+    
+    -- Mensagem de créditos
+    local CreditLabel = Instance.new("TextLabel")
+    CreditLabel.Name = "CreditLabel"
+    CreditLabel.Size = UDim2.new(0, 300, 0, 60)
+    CreditLabel.Position = UDim2.new(0.5, -150, 0.5, -30)
+    CreditLabel.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    CreditLabel.BackgroundTransparency = 0.2
+    CreditLabel.BorderSizePixel = 0
+    CreditLabel.Text = "✨ Feito por Eri10pc ✨"
+    CreditLabel.TextColor3 = Color3.fromRGB(0, 255, 255)
+    CreditLabel.TextSize = 24
+    CreditLabel.Font = Enum.Font.SourceSansBold
+    CreditLabel.TextStrokeTransparency = 0.5
+    CreditLabel.Parent = ScreenGui
+    
+    local CreditCorner = Instance.new("UICorner")
+    CreditCorner.CornerRadius = UDim.new(0, 12)
+    CreditCorner.Parent = CreditLabel
+    
+    -- Efeito de fade in/out
+    CreditLabel.BackgroundTransparency = 1
+    CreditLabel.TextTransparency = 1
+    
+    -- Fade in
+    local fadeIn = TweenService:Create(CreditLabel, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        BackgroundTransparency = 0.2,
+        TextTransparency = 0
+    })
+    fadeIn:Play()
+    
+    -- Aguardar 3 segundos e fazer fade out
+    task.wait(3)
+    local fadeOut = TweenService:Create(CreditLabel, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+        BackgroundTransparency = 1,
+        TextTransparency = 1
+    })
+    fadeOut:Play()
+    
+    -- Remover após fade out
+    fadeOut.Completed:Connect(function()
+        CreditLabel:Destroy()
+    end)
 end
 
 local function CreateFOVCircle()
@@ -435,67 +494,77 @@ end
 local function UpdateESP()
     for player, esp in pairs(ESPObjects) do
         if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
-            local hrp = player.Character.HumanoidRootPart
-            local head = player.Character:FindFirstChild("Head")
-            local humanoid = player.Character.Humanoid
             
-            local vector, onScreen = Camera:WorldToViewportPoint(hrp.Position)
-            
-            if onScreen and Config.ESP.Enabled then
-                local headPos = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
-                local legPos = Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0))
-                
-                local height = math.abs(headPos.Y - legPos.Y)
-                local width = height / 2
-                
-                if Config.ESP.ShowBox then
-                    esp.Box.Size = Vector2.new(width, height)
-                    esp.Box.Position = Vector2.new(vector.X - width/2, vector.Y - height/2)
-                    esp.Box.Visible = true
-                else
-                    esp.Box.Visible = false
-                end
-                
-                if Config.ESP.ShowHealth then
-                    local healthPercent = humanoid.Health / humanoid.MaxHealth
-                    local barHeight = height
-                    local barWidth = 4
-                    
-                    esp.HealthBarBG.Size = Vector2.new(barWidth, barHeight)
-                    esp.HealthBarBG.Position = Vector2.new(vector.X - width/2 - barWidth - 2, vector.Y - height/2)
-                    esp.HealthBarBG.Visible = true
-                    
-                    esp.HealthBar.Size = Vector2.new(barWidth, barHeight * healthPercent)
-                    esp.HealthBar.Position = Vector2.new(vector.X - width/2 - barWidth - 2, vector.Y - height/2 + barHeight * (1 - healthPercent))
-                    esp.HealthBar.Color = Color3.fromRGB(255 * (1 - healthPercent), 255 * healthPercent, 0)
-                    esp.HealthBar.Visible = true
-                else
-                    esp.HealthBar.Visible = false
-                    esp.HealthBarBG.Visible = false
-                end
-                
-                if Config.ESP.ShowName then
-                    esp.Name.Text = player.Name
-                    esp.Name.Position = Vector2.new(vector.X, headPos.Y - 20)
-                    esp.Name.Visible = true
-                else
-                    esp.Name.Visible = false
-                end
-                
-                if Config.ESP.ShowDistance then
-                    local distance = math.floor((hrp.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude)
-                    esp.Distance.Text = distance .. "m"
-                    esp.Distance.Position = Vector2.new(vector.X, legPos.Y + 5)
-                    esp.Distance.Visible = true
-                else
-                    esp.Distance.Visible = false
-                end
-            else
+            -- Verificar se está no mesmo time
+            if Config.ESP.TeamCheck and IsSameTeam(player) then
                 esp.Box.Visible = false
                 esp.Name.Visible = false
                 esp.Distance.Visible = false
                 esp.HealthBar.Visible = false
                 esp.HealthBarBG.Visible = false
+            else
+                local hrp = player.Character.HumanoidRootPart
+                local head = player.Character:FindFirstChild("Head")
+                local humanoid = player.Character.Humanoid
+                
+                local vector, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+                
+                if onScreen and Config.ESP.Enabled then
+                    local headPos = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
+                    local legPos = Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0))
+                    
+                    local height = math.abs(headPos.Y - legPos.Y)
+                    local width = height / 2
+                    
+                    if Config.ESP.ShowBox then
+                        esp.Box.Size = Vector2.new(width, height)
+                        esp.Box.Position = Vector2.new(vector.X - width/2, vector.Y - height/2)
+                        esp.Box.Visible = true
+                    else
+                        esp.Box.Visible = false
+                    end
+                    
+                    if Config.ESP.ShowHealth then
+                        local healthPercent = humanoid.Health / humanoid.MaxHealth
+                        local barHeight = height
+                        local barWidth = 4
+                        
+                        esp.HealthBarBG.Size = Vector2.new(barWidth, barHeight)
+                        esp.HealthBarBG.Position = Vector2.new(vector.X - width/2 - barWidth - 2, vector.Y - height/2)
+                        esp.HealthBarBG.Visible = true
+                        
+                        esp.HealthBar.Size = Vector2.new(barWidth, barHeight * healthPercent)
+                        esp.HealthBar.Position = Vector2.new(vector.X - width/2 - barWidth - 2, vector.Y - height/2 + barHeight * (1 - healthPercent))
+                        esp.HealthBar.Color = Color3.fromRGB(255 * (1 - healthPercent), 255 * healthPercent, 0)
+                        esp.HealthBar.Visible = true
+                    else
+                        esp.HealthBar.Visible = false
+                        esp.HealthBarBG.Visible = false
+                    end
+                    
+                    if Config.ESP.ShowName then
+                        esp.Name.Text = player.Name
+                        esp.Name.Position = Vector2.new(vector.X, headPos.Y - 20)
+                        esp.Name.Visible = true
+                    else
+                        esp.Name.Visible = false
+                    end
+                    
+                    if Config.ESP.ShowDistance then
+                        local distance = math.floor((hrp.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude)
+                        esp.Distance.Text = distance .. "m"
+                        esp.Distance.Position = Vector2.new(vector.X, legPos.Y + 5)
+                        esp.Distance.Visible = true
+                    else
+                        esp.Distance.Visible = false
+                    end
+                else
+                    esp.Box.Visible = false
+                    esp.Name.Visible = false
+                    esp.Distance.Visible = false
+                    esp.HealthBar.Visible = false
+                    esp.HealthBarBG.Visible = false
+                end
             end
         else
             esp.Box.Visible = false
@@ -521,6 +590,12 @@ local function GetClosestPlayer()
     
     for _, player in pairs(Players:GetPlayers()) do
         if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild(Config.Aimbot.TargetPart) and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
+            
+            -- Verificar se está no mesmo time
+            if Config.Aimbot.TeamCheck and IsSameTeam(player) then
+                continue
+            end
+            
             local targetPart = player.Character[Config.Aimbot.TargetPart]
             local screenPoint, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
             
@@ -589,7 +664,7 @@ UserInputService.InputBegan:Connect(function(input, gameProcessed)
             MenuOpen = false
         else
             MobileGUI.MainFrame.Visible = true
-            MobileGUI.MainFrame:TweenPosition(UDim2.new(0.5, -160, 0.5, -225), Enum.EasingDirection.Out, Enum.EasingStyle.Back, 0.3, true)
+            MobileGUI.MainFrame:TweenPosition(UDim2.new(0.5, -160, 0.5, -260), Enum.EasingDirection.Out, Enum.EasingStyle.Back, 0.3, true)
             MobileGUI.OpenButton.Visible = false
             MenuOpen = true
         end
@@ -610,4 +685,5 @@ end)
 print("=================================")
 print("ESP & Aimbot carregado!")
 print("Pressione M para abrir/fechar menu")
+print("Team Check ativado por padrão")
 print("=================================")
