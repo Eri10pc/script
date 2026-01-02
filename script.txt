@@ -385,49 +385,6 @@ local function CreateGUI()
     
     ScreenGui.Parent = game:GetService("CoreGui")
     MobileGUI = ScreenGui
-    
-    -- Mensagem de créditos
-    local CreditLabel = Instance.new("TextLabel")
-    CreditLabel.Name = "CreditLabel"
-    CreditLabel.Size = UDim2.new(0, 300, 0, 60)
-    CreditLabel.Position = UDim2.new(0.5, -150, 0.5, -30)
-    CreditLabel.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
-    CreditLabel.BackgroundTransparency = 0.2
-    CreditLabel.BorderSizePixel = 0
-    CreditLabel.Text = "✨ Feito por Eri10pc ✨"
-    CreditLabel.TextColor3 = Color3.fromRGB(0, 255, 255)
-    CreditLabel.TextSize = 24
-    CreditLabel.Font = Enum.Font.SourceSansBold
-    CreditLabel.TextStrokeTransparency = 0.5
-    CreditLabel.Parent = ScreenGui
-    
-    local CreditCorner = Instance.new("UICorner")
-    CreditCorner.CornerRadius = UDim.new(0, 12)
-    CreditCorner.Parent = CreditLabel
-    
-    -- Efeito de fade in/out
-    CreditLabel.BackgroundTransparency = 1
-    CreditLabel.TextTransparency = 1
-    
-    -- Fade in
-    local fadeIn = TweenService:Create(CreditLabel, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        BackgroundTransparency = 0.2,
-        TextTransparency = 0
-    })
-    fadeIn:Play()
-    
-    -- Aguardar 3 segundos e fazer fade out
-    task.wait(3)
-    local fadeOut = TweenService:Create(CreditLabel, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
-        BackgroundTransparency = 1,
-        TextTransparency = 1
-    })
-    fadeOut:Play()
-    
-    -- Remover após fade out
-    fadeOut.Completed:Connect(function()
-        CreditLabel:Destroy()
-    end)
 end
 
 local function CreateFOVCircle()
@@ -635,7 +592,68 @@ local function Aimbot()
     end
 end
 
+-- Função para mostrar mensagem de créditos
+local function ShowCreditMessage()
+    local TempGui = Instance.new("ScreenGui")
+    TempGui.Name = "CreditGui"
+    TempGui.ResetOnSpawn = false
+    TempGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    TempGui.IgnoreGuiInset = true
+    TempGui.Parent = game:GetService("CoreGui")
+    
+    local CreditLabel = Instance.new("TextLabel")
+    CreditLabel.Name = "CreditLabel"
+    CreditLabel.Size = UDim2.new(0, 300, 0, 60)
+    CreditLabel.Position = UDim2.new(0.5, -150, 0.5, -30)
+    CreditLabel.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+    CreditLabel.BackgroundTransparency = 1
+    CreditLabel.BorderSizePixel = 0
+    CreditLabel.Text = "✨ Feito por Eri10pc ✨"
+    CreditLabel.TextColor3 = Color3.fromRGB(0, 255, 255)
+    CreditLabel.TextSize = 24
+    CreditLabel.Font = Enum.Font.SourceSansBold
+    CreditLabel.TextStrokeTransparency = 0.5
+    CreditLabel.TextTransparency = 1
+    CreditLabel.Parent = TempGui
+    
+    local CreditCorner = Instance.new("UICorner")
+    CreditCorner.CornerRadius = UDim.new(0, 12)
+    CreditCorner.Parent = CreditLabel
+    
+    -- Fade in
+    local fadeIn = TweenService:Create(CreditLabel, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        BackgroundTransparency = 0.2,
+        TextTransparency = 0
+    })
+    fadeIn:Play()
+    
+    -- Aguardar 3 segundos e fazer fade out
+    task.wait(3)
+    local fadeOut = TweenService:Create(CreditLabel, TweenInfo.new(0.5, Enum.EasingStyle.Quad, Enum.EasingDirection.In), {
+        BackgroundTransparency = 1,
+        TextTransparency = 1
+    })
+    fadeOut:Play()
+    
+    -- Remover após fade out
+    fadeOut.Completed:Connect(function()
+        TempGui:Destroy()
+    end)
+    
+    -- Retornar tempo total da animação
+    return 3.5
+end
+
 -- Inicialização
+print("=================================")
+print("Carregando ESP & Aimbot...")
+print("=================================")
+
+-- Mostrar mensagem de créditos primeiro
+ShowCreditMessage()
+task.wait(3.5) -- Aguardar a mensagem terminar
+
+-- Depois inicializar o script
 CreateFOVCircle()
 CreateGUI()
 
