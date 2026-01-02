@@ -1,0 +1,412 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Camera = workspace.CurrentCamera
+local LocalPlayer = Players.LocalPlayer
+
+-- Detectar plataforma
+local IsMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+
+-- Configurações
+local Config = {
+    ESP = {
+        Enabled = true,
+        ShowBox = true,
+        ShowName = true,
+        ShowDistance = true,
+        BoxColor = Color3.fromRGB(255, 0, 0),
+        NameColor = Color3.fromRGB(255, 255, 255)
+    },
+    Aimbot = {
+        Enabled = false,
+        FOV = IsMobile and 300 or 200,
+        ShowFOV = true,
+        FOVColor = Color3.fromRGB(255, 255, 255),
+        TargetPart = "Head",
+        Smoothness = IsMobile and 0.15 or 0.1
+    }
+}
+
+-- Tabelas de armazenamento
+local ESPObjects = {}
+local FOVCircle
+local MobileGUI
+
+-- Função para criar GUI Mobile
+local function CreateMobileGUI()
+    if not IsMobile then return end
+    
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "ESPAimbotGUI"
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    
+    -- Painel de controle
+    local MainFrame = Instance.new("Frame")
+    MainFrame.Name = "MainFrame"
+    MainFrame.Size = UDim2.new(0, 200, 0, 250)
+    MainFrame.Position = UDim2.new(1, -210, 0, 10)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    MainFrame.BackgroundTransparency = 0.3
+    MainFrame.BorderSizePixel = 0
+    MainFrame.Parent = ScreenGui
+    
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0, 10)
+    UICorner.Parent = MainFrame
+    
+    -- Título
+    local Title = Instance.new("TextLabel")
+    Title.Name = "Title"
+    Title.Size = UDim2.new(1, 0, 0, 40)
+    Title.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    Title.BackgroundTransparency = 0.3
+    Title.BorderSizePixel = 0
+    Title.Text = "ESP & Aimbot"
+    Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+    Title.TextSize = 18
+    Title.Font = Enum.Font.SourceSansBold
+    Title.Parent = MainFrame
+    
+    local TitleCorner = Instance.new("UICorner")
+    TitleCorner.CornerRadius = UDim.new(0, 10)
+    TitleCorner.Parent = Title
+    
+    -- Botão ESP Toggle
+    local ESPButton = Instance.new("TextButton")
+    ESPButton.Name = "ESPButton"
+    ESPButton.Size = UDim2.new(0.9, 0, 0, 45)
+    ESPButton.Position = UDim2.new(0.05, 0, 0, 50)
+    ESPButton.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+    ESPButton.BorderSizePixel = 0
+    ESPButton.Text = "ESP: ON"
+    ESPButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ESPButton.TextSize = 16
+    ESPButton.Font = Enum.Font.SourceSansBold
+    ESPButton.Parent = MainFrame
+    
+    local ESPCorner = Instance.new("UICorner")
+    ESPCorner.CornerRadius = UDim.new(0, 8)
+    ESPCorner.Parent = ESPButton
+    
+    -- Botão Aimbot Toggle
+    local AimbotButton = Instance.new("TextButton")
+    AimbotButton.Name = "AimbotButton"
+    AimbotButton.Size = UDim2.new(0.9, 0, 0, 45)
+    AimbotButton.Position = UDim2.new(0.05, 0, 0, 105)
+    AimbotButton.BackgroundColor3 = Color3.fromRGB(170, 0, 0)
+    AimbotButton.BorderSizePixel = 0
+    AimbotButton.Text = "AIMBOT: OFF"
+    AimbotButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    AimbotButton.TextSize = 16
+    AimbotButton.Font = Enum.Font.SourceSansBold
+    AimbotButton.Parent = MainFrame
+    
+    local AimbotCorner = Instance.new("UICorner")
+    AimbotCorner.CornerRadius = UDim.new(0, 8)
+    AimbotCorner.Parent = AimbotButton
+    
+    -- Botão FOV Toggle
+    local FOVButton = Instance.new("TextButton")
+    FOVButton.Name = "FOVButton"
+    FOVButton.Size = UDim2.new(0.9, 0, 0, 45)
+    FOVButton.Position = UDim2.new(0.05, 0, 0, 160)
+    FOVButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    FOVButton.BorderSizePixel = 0
+    FOVButton.Text = "FOV: ON"
+    FOVButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+    FOVButton.TextSize = 16
+    FOVButton.Font = Enum.Font.SourceSansBold
+    FOVButton.Parent = MainFrame
+    
+    local FOVCorner = Instance.new("UICorner")
+    FOVCorner.CornerRadius = UDim.new(0, 8)
+    FOVCorner.Parent = FOVButton
+    
+    -- Status Label
+    local StatusLabel = Instance.new("TextLabel")
+    StatusLabel.Name = "StatusLabel"
+    StatusLabel.Size = UDim2.new(0.9, 0, 0, 30)
+    StatusLabel.Position = UDim2.new(0.05, 0, 0, 215)
+    StatusLabel.BackgroundTransparency = 1
+    StatusLabel.Text = "Mobile Mode"
+    StatusLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+    StatusLabel.TextSize = 12
+    StatusLabel.Font = Enum.Font.SourceSans
+    StatusLabel.Parent = MainFrame
+    
+    -- Eventos dos botões
+    ESPButton.MouseButton1Click:Connect(function()
+        Config.ESP.Enabled = not Config.ESP.Enabled
+        ESPButton.Text = "ESP: " .. (Config.ESP.Enabled and "ON" or "OFF")
+        ESPButton.BackgroundColor3 = Config.ESP.Enabled and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(170, 0, 0)
+    end)
+    
+    AimbotButton.MouseButton1Click:Connect(function()
+        Config.Aimbot.Enabled = not Config.Aimbot.Enabled
+        AimbotButton.Text = "AIMBOT: " .. (Config.Aimbot.Enabled and "ON" or "OFF")
+        AimbotButton.BackgroundColor3 = Config.Aimbot.Enabled and Color3.fromRGB(0, 170, 0) or Color3.fromRGB(170, 0, 0)
+    end)
+    
+    FOVButton.MouseButton1Click:Connect(function()
+        Config.Aimbot.ShowFOV = not Config.Aimbot.ShowFOV
+        FOVButton.Text = "FOV: " .. (Config.Aimbot.ShowFOV and "ON" or "OFF")
+        FOVButton.BackgroundColor3 = Config.Aimbot.ShowFOV and Color3.fromRGB(70, 70, 70) or Color3.fromRGB(50, 50, 50)
+    end)
+    
+    ScreenGui.Parent = game:GetService("CoreGui")
+    MobileGUI = ScreenGui
+end
+
+-- Função para criar FOV Circle
+local function CreateFOVCircle()
+    if FOVCircle then FOVCircle:Remove() end
+    FOVCircle = Drawing.new("Circle")
+    FOVCircle.Thickness = IsMobile and 3 or 2
+    FOVCircle.NumSides = 64
+    FOVCircle.Radius = Config.Aimbot.FOV
+    FOVCircle.Color = Config.Aimbot.FOVColor
+    FOVCircle.Visible = Config.Aimbot.ShowFOV
+    FOVCircle.Filled = false
+    FOVCircle.Transparency = 1
+end
+
+-- Função para criar ESP
+local function CreateESP(player)
+    local ESP = {
+        Box = Drawing.new("Square"),
+        Name = Drawing.new("Text"),
+        Distance = Drawing.new("Text"),
+        HealthBar = Drawing.new("Square"),
+        HealthBarBG = Drawing.new("Square")
+    }
+    
+    ESP.Box.Thickness = IsMobile and 3 or 2
+    ESP.Box.Color = Config.ESP.BoxColor
+    ESP.Box.Filled = false
+    ESP.Box.Visible = false
+    
+    ESP.Name.Size = IsMobile and 16 or 14
+    ESP.Name.Center = true
+    ESP.Name.Outline = true
+    ESP.Name.Color = Config.ESP.NameColor
+    ESP.Name.Visible = false
+    
+    ESP.Distance.Size = IsMobile and 14 or 12
+    ESP.Distance.Center = true
+    ESP.Distance.Outline = true
+    ESP.Distance.Color = Config.ESP.NameColor
+    ESP.Distance.Visible = false
+    
+    ESP.HealthBarBG.Thickness = 1
+    ESP.HealthBarBG.Color = Color3.fromRGB(0, 0, 0)
+    ESP.HealthBarBG.Filled = true
+    ESP.HealthBarBG.Visible = false
+    ESP.HealthBarBG.Transparency = 0.5
+    
+    ESP.HealthBar.Thickness = 1
+    ESP.HealthBar.Color = Color3.fromRGB(0, 255, 0)
+    ESP.HealthBar.Filled = true
+    ESP.HealthBar.Visible = false
+    
+    ESPObjects[player] = ESP
+end
+
+-- Função para remover ESP
+local function RemoveESP(player)
+    if ESPObjects[player] then
+        for _, drawing in pairs(ESPObjects[player]) do
+            drawing:Remove()
+        end
+        ESPObjects[player] = nil
+    end
+end
+
+-- Função para atualizar ESP
+local function UpdateESP()
+    for player, esp in pairs(ESPObjects) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
+            local hrp = player.Character.HumanoidRootPart
+            local head = player.Character:FindFirstChild("Head")
+            local humanoid = player.Character.Humanoid
+            
+            local vector, onScreen = Camera:WorldToViewportPoint(hrp.Position)
+            
+            if onScreen and Config.ESP.Enabled then
+                local headPos = Camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
+                local legPos = Camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0))
+                
+                local height = math.abs(headPos.Y - legPos.Y)
+                local width = height / 2
+                
+                -- Box
+                if Config.ESP.ShowBox then
+                    esp.Box.Size = Vector2.new(width, height)
+                    esp.Box.Position = Vector2.new(vector.X - width/2, vector.Y - height/2)
+                    esp.Box.Visible = true
+                else
+                    esp.Box.Visible = false
+                end
+                
+                -- Health Bar
+                local healthPercent = humanoid.Health / humanoid.MaxHealth
+                local barHeight = height
+                local barWidth = IsMobile and 6 or 4
+                
+                esp.HealthBarBG.Size = Vector2.new(barWidth, barHeight)
+                esp.HealthBarBG.Position = Vector2.new(vector.X - width/2 - barWidth - 2, vector.Y - height/2)
+                esp.HealthBarBG.Visible = true
+                
+                esp.HealthBar.Size = Vector2.new(barWidth, barHeight * healthPercent)
+                esp.HealthBar.Position = Vector2.new(vector.X - width/2 - barWidth - 2, vector.Y - height/2 + barHeight * (1 - healthPercent))
+                esp.HealthBar.Color = Color3.fromRGB(255 * (1 - healthPercent), 255 * healthPercent, 0)
+                esp.HealthBar.Visible = true
+                
+                -- Name
+                if Config.ESP.ShowName then
+                    esp.Name.Text = player.Name
+                    esp.Name.Position = Vector2.new(vector.X, headPos.Y - 20)
+                    esp.Name.Visible = true
+                else
+                    esp.Name.Visible = false
+                end
+                
+                -- Distance
+                if Config.ESP.ShowDistance then
+                    local distance = math.floor((hrp.Position - LocalPlayer.Character.HumanoidRootPart.Position).Magnitude)
+                    esp.Distance.Text = distance .. "m"
+                    esp.Distance.Position = Vector2.new(vector.X, legPos.Y + 5)
+                    esp.Distance.Visible = true
+                else
+                    esp.Distance.Visible = false
+                end
+            else
+                esp.Box.Visible = false
+                esp.Name.Visible = false
+                esp.Distance.Visible = false
+                esp.HealthBar.Visible = false
+                esp.HealthBarBG.Visible = false
+            end
+        else
+            esp.Box.Visible = false
+            esp.Name.Visible = false
+            esp.Distance.Visible = false
+            esp.HealthBar.Visible = false
+            esp.HealthBarBG.Visible = false
+        end
+    end
+end
+
+-- Função para obter posição central (mobile ou mouse)
+local function GetScreenCenter()
+    if IsMobile then
+        return Vector2.new(Camera.ViewportSize.X / 2, Camera.ViewportSize.Y / 2)
+    else
+        return UserInputService:GetMouseLocation()
+    end
+end
+
+-- Função para obter o alvo mais próximo
+local function GetClosestPlayer()
+    local closestPlayer = nil
+    local shortestDistance = Config.Aimbot.FOV
+    
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= LocalPlayer and player.Character and player.Character:FindFirstChild(Config.Aimbot.TargetPart) and player.Character:FindFirstChild("Humanoid") and player.Character.Humanoid.Health > 0 then
+            local targetPart = player.Character[Config.Aimbot.TargetPart]
+            local screenPoint, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
+            
+            if onScreen then
+                local centerPos = GetScreenCenter()
+                local distance = (Vector2.new(screenPoint.X, screenPoint.Y) - centerPos).Magnitude
+                
+                if distance < shortestDistance then
+                    closestPlayer = player
+                    shortestDistance = distance
+                end
+            end
+        end
+    end
+    
+    return closestPlayer
+end
+
+-- Função de Aimbot
+local function Aimbot()
+    if not Config.Aimbot.Enabled then return end
+    
+    local target = GetClosestPlayer()
+    if target and target.Character and target.Character:FindFirstChild(Config.Aimbot.TargetPart) then
+        local targetPart = target.Character[Config.Aimbot.TargetPart]
+        local targetPos = targetPart.Position
+        
+        -- Compensação de velocidade
+        if targetPart.Parent:FindFirstChild("Humanoid") then
+            local velocity = targetPart.Velocity
+            targetPos = targetPos + (velocity * 0.1)
+        end
+        
+        local cameraPos = Camera.CFrame.Position
+        local direction = (targetPos - cameraPos).Unit
+        local targetCFrame = CFrame.new(cameraPos, cameraPos + direction)
+        
+        Camera.CFrame = Camera.CFrame:Lerp(targetCFrame, Config.Aimbot.Smoothness)
+    end
+end
+
+-- Inicialização
+CreateFOVCircle()
+if IsMobile then
+    CreateMobileGUI()
+end
+
+for _, player in pairs(Players:GetPlayers()) do
+    if player ~= LocalPlayer then
+        CreateESP(player)
+    end
+end
+
+-- Eventos
+Players.PlayerAdded:Connect(function(player)
+    CreateESP(player)
+end)
+
+Players.PlayerRemoving:Connect(function(player)
+    RemoveESP(player)
+end)
+
+-- Toggle Aimbot com tecla E (PC)
+if not IsMobile then
+    UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if not gameProcessed and input.KeyCode == Enum.KeyCode.E then
+            Config.Aimbot.Enabled = not Config.Aimbot.Enabled
+            print("Aimbot:", Config.Aimbot.Enabled and "ATIVADO" or "DESATIVADO")
+        end
+    end)
+end
+
+-- Loop principal
+RunService.RenderStepped:Connect(function()
+    -- Atualizar FOV Circle
+    if FOVCircle then
+        FOVCircle.Position = GetScreenCenter()
+        FOVCircle.Visible = Config.Aimbot.ShowFOV
+        FOVCircle.Radius = Config.Aimbot.FOV
+    end
+    
+    -- Atualizar ESP
+    UpdateESP()
+    
+    -- Executar Aimbot
+    Aimbot()
+end)
+
+print("=================================")
+print("ESP & Aimbot carregado!")
+print("Plataforma:", IsMobile and "MOBILE" or "PC")
+if IsMobile then
+    print("Use os botões na tela")
+else
+    print("Pressione E para Aimbot")
+end
+print("=================================")
